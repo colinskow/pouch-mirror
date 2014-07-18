@@ -47,9 +47,13 @@ db.post({title: "Ziggy Stardust"})
   });
 ```
 
+API
+---
+PouchMirror uses that exact same API as [PouchDB](http://pouchdb.com/api.html), but does some magic in the background 
+to ensure your local mirror stays in perfect sync.
+
 Road Map
 ---
-
 **1) Callback functions**
 
 I personally use Promises exclusively and don't use callbacks. If someone wants this functionality, I would be happy to 
