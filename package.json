@@ -1,0 +1,36 @@
+{
+  "name": "pouch-mirror",
+  "version": "0.0.1",
+  "description": "Helps you create a local slave mirror of any CouchDB database for lightning-fast reads and secure writes.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/colinskow/pouch-mirror.git"
+  },
+  "scripts": {
+    "test": "gulp test"
+  },
+  "keywords": [
+    "CouchDB",
+    "PouchDB",
+    "mirror",
+    "replication",
+    "sync"
+  ],
+  "author": "Colin Skow",
+  "license": "MIT",
+  "dependencies": {
+    "bluebird": "^2.2.2",
+    "memdown": "^0.10.2",
+    "pouchdb": "^2.2.3"
+  },
+  "devDependencies": {
+    "chai": "^1.9.1",
+    "deepmerge": "^0.2.7",
+    "gulp": "^3.8.6",
+    "gulp-jshint": "^1.7.1",
+    "gulp-mocha": "^0.5.1",
+    "jshint-stylish": "^0.4.0",
+    "mocha": "^1.20.1"
+  }
+}
