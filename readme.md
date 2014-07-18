@@ -19,6 +19,10 @@ no data saved.
 
 For issues and feature requests visit the [issue tracker](https://github.com/colinskow/pouch-mirror/issues).
 
+Build status
+---
+[![Build Status](https://travis-ci.org/colinskow/pouch-mirror.png?branch=master)](https://travis-ci.org/colinskow/pouch-mirror)
+
 Usage
 ---
 PouchMirror is an exact mirror of the PouchDB API, and can serve as a drop-in replacement for your existing PouchDB 
@@ -30,7 +34,7 @@ In Node.js, simply require "pouch-mirror" and initiate it:
 Example:
 ```Javascript
 var PouchMirror = require('pouch-mirror');
-var db = new PouchMirror('testDB', 'http://localhost:5897/testdb');
+var db = new PouchMirror('testDB', 'http://localhost:5984/pouchtest');
 db.post({title: "Ziggy Stardust"})
   .then(function(result) {
     return db.get(result.id);
