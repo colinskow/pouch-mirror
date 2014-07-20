@@ -1,4 +1,5 @@
 var PouchMirror = require('../index');
+var Promise = require('bluebird');
 var expect = require('chai').expect;
 
 var remoteURL = 'http://localhost:5984/pouchtest';
@@ -12,6 +13,7 @@ var previous;
 describe('PouchMirror', function () {
 
   describe('info()', function () {
+
     it('should return info from local and remote', function (done) {
       console.log('Testing info');
       previous = db.info()
@@ -24,12 +26,14 @@ describe('PouchMirror', function () {
           throw new Error(err);
         });
     });
+
   });
 
   describe('post() and remove()', function () {
     var newID;
     var newRev;
     var newDoc;
+
     it('should add a new document to both local and remote', function (done) {
       previous
         .finally(function() {
@@ -55,8 +59,8 @@ describe('PouchMirror', function () {
               throw new Error(err);
             });
         });
-
     });
+
     it('should remove the document we just added', function (done) {
       previous
         .finally(function() {
@@ -72,6 +76,7 @@ describe('PouchMirror', function () {
             });
         });
     });
+
   });
 
   describe('bulkDocs', function () {
@@ -126,12 +131,34 @@ describe('PouchMirror', function () {
               done();
             });
         });
-
     });
     
   });
 
+  describe('callbacks', function() {
+
+    it('should work with callbacks also', function(done) {
+      previous
+        .finally(function() {
+          return new Promise(function(resolve) {
+            console.log('Testing callbacks');
+            db.put({_id: 'callback_test'}, function(err, result) {
+              expect(result.id).to.equal('callback_test');
+              db.get('callback_test', function(err, doc) {
+                expect(doc._id).to.equal('callback_test');
+                console.log('Finished callbacks');
+                resolve(true);
+                done();
+              });
+            });
+          });
+        });
+    });
+
+  });
+
   describe('cleanup', function () {
+
     it('should destroy the pouchtest database', function (done) {
       previous
         .finally(function() {
@@ -146,6 +173,7 @@ describe('PouchMirror', function () {
             });
         });
     });
+
   });
 
 });

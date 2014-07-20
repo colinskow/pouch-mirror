@@ -40,52 +40,56 @@ var pouchMirror = module.exports = function(dbname, remoteURL) {
 };
 
 pouchMirror.prototype.get = function() {
-  return this.readDB.get.apply(this.readDB, arguments);
+  var args = processArgs(arguments);
+  var promise = this.readDB.get.apply(this.readDB, args.args);
+  if(args.cb) promise.nodeify(args.cb);
+  return promise;
 };
 
 pouchMirror.prototype.allDocs = function() {
-  return this.readDB.allDocs.apply(this.readDB, arguments);
+  var args = processArgs(arguments);
+  var promise = this.readDB.allDocs.apply(this.readDB, args.args);
+  if(args.cb) promise.nodeify(args.cb);
+  return promise;
 };
 
 pouchMirror.prototype.put = function() {
+  var args = processArgs(arguments);
   var self = this;
-  var myArguments = argsArray(arguments);
   var output;
-  return self.remoteDB.put.apply(self.remoteDB, myArguments)
+  var promise = self.remoteDB.put.apply(self.remoteDB, args.args)
     .then(function(response) {
       output = response;
       return self.listener.waitForChange(response.rev);
     })
     .then(function() {
       return Promise.resolve(output);
-    })
-    .catch(function(err) {
-      throw new Error(err);
     });
+  if(args.cb) promise.nodeify(args.cb);
+  return promise;
 };
 
 pouchMirror.prototype.post = function() {
+  var args = processArgs(arguments);
   var self = this;
-  var myArguments = argsArray(arguments);
   var output;
-  return self.remoteDB.post.apply(self.remoteDB, myArguments)
+  var promise = self.remoteDB.post.apply(self.remoteDB, args.args)
     .then(function(response) {
       output = response;
       return self.listener.waitForChange(response.rev);
     })
     .then(function() {
       return Promise.resolve(output);
-    })
-    .catch(function(err) {
-      throw new Error(err);
     });
+  if(args.cb) promise.nodeify(args.cb);
+  return promise;
 };
 
 pouchMirror.prototype.bulkDocs = function() {
+  var args = processArgs(arguments);
   var self = this;
-  var myArguments = argsArray(arguments);
   var output;
-  return self.remoteDB.bulkDocs.apply(self.remoteDB, myArguments)
+  var promise = self.remoteDB.bulkDocs.apply(self.remoteDB, args.args)
     .then(function(results) {
       output = results;
       var promises = [];
@@ -98,35 +102,39 @@ pouchMirror.prototype.bulkDocs = function() {
     })
     .then(function(){
       return Promise.resolve(output);
-    })
-    .catch(function(err) {
-      throw new Error(err);
     });
+  if(args.cb) promise.nodeify(args.cb);
+  return promise;
 };
 
 pouchMirror.prototype.remove = function() {
+  var args = processArgs(arguments);
   var self = this;
-  var myArguments = argsArray(arguments);
   var output;
-  return self.remoteDB.remove.apply(self.remoteDB, myArguments)
+  var promise = self.remoteDB.remove.apply(self.remoteDB, args.args)
     .then(function(result) {
       output = result;
       return self.listener.waitForChange(result.rev);
     })
     .then(function() {
       return Promise.resolve(output);
-    })
-    .catch(function(err) {
-      throw new Error(err);
     });
+  if(args.cb) promise.nodeify(args.cb);
+  return promise;
 };
 
 pouchMirror.prototype.changes = function() {
-  return this.localDB.changes.apply(this.localDB, arguments);
+  var args = processArgs(arguments);
+  var promise = this.localDB.changes.apply(this.localDB, args.args);
+  if(args.cb) promise.nodeify(args.cb);
+  return promise;
 };
 
 pouchMirror.prototype.replicate = function() {
-  return this.localDB.replicate.apply(this.localDB, arguments);
+  var args = processArgs(arguments);
+  var promise = this.localDB.replicate.apply(this.localDB, args.args);
+  if(args.cb) promise.nodeify(args.cb);
+  return promise;
 };
 
 pouchMirror.prototype.sync = function() {
@@ -134,51 +142,56 @@ pouchMirror.prototype.sync = function() {
 };
 
 pouchMirror.prototype.putAttachment = function() {
+  var args = processArgs(arguments);
   var self = this;
-  var myArguments = argsArray(arguments);
   var output;
-  return self.remoteDB.putAttachment.apply(self.remoteDB, myArguments)
+  var promise = self.remoteDB.putAttachment.apply(self.remoteDB, args.args)
     .then(function(response) {
       output = response;
       return self.listener.waitForChange(response.rev);
     })
     .then(function() {
       return Promise.resolve(output);
-    })
-    .catch(function(err) {
-      throw new Error(err);
     });
+  if(args.cb) promise.nodeify(args.cb);
+  return promise;
 };
 
 pouchMirror.prototype.getAttachment = function() {
-  return this.readDB.getAttachment.apply(this.readDB, arguments);
+  var args = processArgs(arguments);
+  var promise = this.readDB.getAttachment.apply(this.readDB, args.args);
+  if(args.cb) promise.nodeify(args.cb);
+  return promise;
 };
 
 pouchMirror.prototype.removeAttachment = function() {
+  var args = processArgs(arguments);
   var self = this;
-  var myArguments = argsArray(arguments);
   var output;
-  return self.remoteDB.removeAttachment.apply(self.remoteDB, myArguments)
+  var promise = self.remoteDB.removeAttachment.apply(self.remoteDB, args.args)
     .then(function(response) {
       output = response;
       return self.listener.waitForChange(response.rev);
     })
     .then(function() {
       return Promise.resolve(output);
-    })
-    .catch(function(err) {
-      throw new Error(err);
     });
+  if(args.cb) promise.nodeify(args.cb);
+  return promise;
 };
 
 pouchMirror.prototype.query = function() {
-  return this.readDB.query.apply(this.readDB, arguments);
+  var args = processArgs(arguments);
+  var promise = this.readDB.query.apply(this.readDB, args.args);
+  if(args.cb) promise.nodeify(args.cb);
+  return promise;
 };
 
 pouchMirror.prototype.info = function() {
+  var args = processArgs(arguments);
   var self = this;
   var theinfo = {};
-  return new Promise(function(resolve, reject) {
+  var promise = new Promise(function(resolve, reject) {
     Promise.all([self.remoteDB.info(), self.localDB.info()])
       .then(function(results) {
         theinfo.remote = results[0];
@@ -188,12 +201,21 @@ pouchMirror.prototype.info = function() {
         return reject(err);
       });
   });
+  if(args.cb) promise.nodeify(args.cb);
+  return promise;
 };
 
 pouchMirror.prototype.cancelSync = function() {
   this.replicator.cancel();
 };
 
-var argsArray = function(args) {
-  return Array.prototype.slice.call(args, 0);
+// Creates an object that separates the callback from the rest of the arguments
+var processArgs = function(args) {
+  args = Array.prototype.slice.call(args);
+  if(typeof args[args.length-1] === 'function') {
+    var callback = args.pop();
+    return {args: args, cb: callback};
+  } else {
+    return {args: args, cb: null};
+  }
 };

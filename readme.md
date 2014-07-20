@@ -26,7 +26,7 @@ Build status
 Usage
 ---
 PouchMirror is an exact mirror of the PouchDB API, and can serve as a drop-in replacement for your existing PouchDB 
-code. The only caveat is that currently only Promises are supported, and callback functions won't work.
+code. Both promises and callbacks are supported.
 
 In Node.js, simply require "pouch-mirror" and initiate it:
 `new PouchMirror(dbName, remoteURL)`
@@ -54,24 +54,20 @@ to ensure your local mirror stays in perfect sync.
 
 Road Map
 ---
-**1) Callback functions**
 
-I personally use Promises exclusively and don't use callbacks. If someone wants this functionality, I would be happy to 
-merge a pull request.
-
-**2) Disk database**
+**1) Disk database**
 
 Currently PouchMirror uses PouchDB's in-memory MemDown adapter. This works well for frequently-accessed data that will 
 fit in your server's memory. I would like to add the option to backup your data to disk, or use an on-disk database 
 exclusively.
 
-**3) Browser support**
+**2) Browser support**
 
 PouchMirror currently doesn't work in the browser. However, I believe this is simply a matter of using Browserify and 
 making sure PouchDB loads the correct adapters. If someone wants to do this, I would be very happy to receive a pull 
 request.
 
-**4) More extensive testing**
+**3) More extensive testing**
 
 I have run the tests against a local CouchDB instance, and against Cloudant. However, this definitely needs real world 
 experience on a multi-tiered setup to make sure it is production safe.

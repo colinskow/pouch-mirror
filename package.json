@@ -1,6 +1,6 @@
 {
   "name": "pouch-mirror",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Helps you create a local slave mirror of any CouchDB database for lightning-fast reads and secure writes.",
   "main": "index.js",
   "repository": {
