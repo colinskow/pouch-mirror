@@ -1,5 +1,5 @@
 var PouchDB = require('pouchdb');
-var Promise = require('bluebird');
+var BPromise = require('bluebird');
 var memdown = require('memdown');
 var listener = require('./listener');
 
@@ -14,7 +14,7 @@ var pouchMirror = module.exports = function(dbname, remoteURL) {
   this.DBSynced = false;
   // Perform the initial sync and notify when complete
 
-  // return Promise.all([this.remoteDB, this.localDB])
+  // return BPromise.all([this.remoteDB, this.localDB])
   this.remoteDB
     .then(function() {
       self.replicator = self.localDB.replicate.from(remoteURL, {live: true})
@@ -63,7 +63,7 @@ pouchMirror.prototype.put = function() {
       return self.listener.waitForChange(response.rev);
     })
     .then(function() {
-      return Promise.resolve(output);
+      return BPromise.resolve(output);
     });
   if(args.cb) promise.nodeify(args.cb);
   return promise;
@@ -79,7 +79,7 @@ pouchMirror.prototype.post = function() {
       return self.listener.waitForChange(response.rev);
     })
     .then(function() {
-      return Promise.resolve(output);
+      return BPromise.resolve(output);
     });
   if(args.cb) promise.nodeify(args.cb);
   return promise;
@@ -98,10 +98,10 @@ pouchMirror.prototype.bulkDocs = function() {
           promises.push(self.listener.waitForChange(row.rev));
         }
       });
-      return Promise.all(promises);
+      return BPromise.all(promises);
     })
     .then(function(){
-      return Promise.resolve(output);
+      return BPromise.resolve(output);
     });
   if(args.cb) promise.nodeify(args.cb);
   return promise;
@@ -117,7 +117,7 @@ pouchMirror.prototype.remove = function() {
       return self.listener.waitForChange(result.rev);
     })
     .then(function() {
-      return Promise.resolve(output);
+      return BPromise.resolve(output);
     });
   if(args.cb) promise.nodeify(args.cb);
   return promise;
@@ -151,7 +151,7 @@ pouchMirror.prototype.putAttachment = function() {
       return self.listener.waitForChange(response.rev);
     })
     .then(function() {
-      return Promise.resolve(output);
+      return BPromise.resolve(output);
     });
   if(args.cb) promise.nodeify(args.cb);
   return promise;
@@ -174,7 +174,7 @@ pouchMirror.prototype.removeAttachment = function() {
       return self.listener.waitForChange(response.rev);
     })
     .then(function() {
-      return Promise.resolve(output);
+      return BPromise.resolve(output);
     });
   if(args.cb) promise.nodeify(args.cb);
   return promise;
@@ -191,8 +191,8 @@ pouchMirror.prototype.info = function() {
   var args = processArgs(arguments);
   var self = this;
   var theinfo = {};
-  var promise = new Promise(function(resolve, reject) {
-    Promise.all([self.remoteDB.info(), self.localDB.info()])
+  var promise = new BPromise(function(resolve, reject) {
+    BPromise.all([self.remoteDB.info(), self.localDB.info()])
       .then(function(results) {
         theinfo.remote = results[0];
         theinfo.local = results[1];

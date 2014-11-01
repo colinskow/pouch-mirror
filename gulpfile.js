@@ -3,9 +3,11 @@ var gulp   = require('gulp'),
     stylish = require('jshint-stylish'),
     mocha = require('gulp-mocha');
 
+var jshintConfig = {node: true, browser: false};
+
 gulp.task('lint', function() {
   return gulp.src(['./*.js', './test/*.js'])
-    .pipe(jshint())
+    .pipe(jshint(jshintConfig))
     .pipe(jshint.reporter(stylish))
     .pipe(jshint.reporter('fail'));
 });

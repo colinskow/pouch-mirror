@@ -1,8 +1,8 @@
-var Promise = require('bluebird');
+var BPromise = require('bluebird');
 
 module.exports = function() {
   var resolve, reject;
-  var promise = new Promise(function() {
+  var promise = new BPromise(function() {
     resolve = arguments[0];
     reject = arguments[1];
   });

@@ -1,4 +1,4 @@
-var Promise = require('bluebird');
+var BPromise = require('bluebird');
 var defer = require('./defer');
 
 var timeLimit = 4900;
@@ -9,7 +9,7 @@ module.exports = function (db) {
 
   // Keep a buffer of recent changes in case the change comes in before our response
   var bufferChange = function(rev) {
-    console.log('Buffering change ' + rev);
+    // console.log('Buffering change ' + rev);
     bufferedChanges[rev] = new Date();
     // get rid of any expired changes
     for(var key in bufferedChanges) {
@@ -36,10 +36,10 @@ module.exports = function (db) {
     var deferred = defer();
     deferred.promise
       .timeout(timeLimit)
-      .catch(Promise.TimeoutError, function(err) {
+      .catch(BPromise.TimeoutError, function(err) {
         delete(pending[rev]);
         console.log(err);
-        return Promise.reject(err);
+        return BPromise.reject(err);
       });
     if(bufferedChanges[rev]) {
       deferred.resolve({rev: rev});

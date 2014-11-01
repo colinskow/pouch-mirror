@@ -1,5 +1,5 @@
 var PouchMirror = require('../index');
-var Promise = require('bluebird');
+var BPromise = require('bluebird');
 var expect = require('chai').expect;
 
 var remoteURL = 'http://localhost:5984/pouchtest';
@@ -140,7 +140,7 @@ describe('PouchMirror', function () {
     it('should work with callbacks also', function(done) {
       previous
         .finally(function() {
-          return new Promise(function(resolve) {
+          return new BPromise(function(resolve) {
             console.log('Testing callbacks');
             db.put({_id: 'callback_test'}, function(err, result) {
               expect(result.id).to.equal('callback_test');
