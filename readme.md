@@ -29,7 +29,7 @@ PouchMirror is an exact mirror of the PouchDB API, and can serve as a drop-in re
 code. Both promises and callbacks are supported.
 
 In Node.js, simply require "pouch-mirror" and initiate it:
-`new PouchMirror(dbName, remoteURL)`
+`new PouchMirror(dbName, remoteURL, [options])`
 
 Example:
 ```Javascript
@@ -46,6 +46,16 @@ db.post({title: "Ziggy Stardust"})
     console.log(err);
   });
 ```
+
+In case there is a replication error, PouchMirror will automatically retry with an [exponential backoff](https://en.wikipedia.org/wiki/Exponential_backoff).
+This will attempt to reconnect less and less frequently until the replication is re-established, at which point it
+resets.
+
+The options are:
+* initialTimeout (default 1000, 1 sec)
+* backoff - the amount the timeout is multiplied each retry (default 2)
+* maxTimeout - the timeout will never exceed this value (default 600000, 10 min)
+* noRetry - if this is set to true no retry will be attempted (default false)
 
 API
 ---

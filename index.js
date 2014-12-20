@@ -1,9 +1,12 @@
 var PouchDB = require('pouchdb');
 var BPromise = require('bluebird');
 var memdown = require('memdown');
+
 var listener = require('./listener');
 
-var pouchMirror = module.exports = function(dbname, remoteURL) {
+var shutdown = false;
+
+var pouchMirror = module.exports = function(dbname, remoteURL, options) {
 
   var self = this;
 
@@ -12,31 +15,64 @@ var pouchMirror = module.exports = function(dbname, remoteURL) {
   // Until the memory database is in sync, we will read from the remote DB
   this.readDB = this.remoteDB;
   this.DBSynced = false;
-  // Perform the initial sync and notify when complete
 
-  // return BPromise.all([this.remoteDB, this.localDB])
+  // Set default options
+  if(!options) {
+    options = {};
+  }
+  options.initialTimeout = options.timeout || 1000;
+  options.backoff = options.backoff || 2;
+  options.maxTimeout = options.maxTimeout || 600000; // ten minutes
+  options.noRetry = options.noRetry || false;
+  var timeout = options.initialTimeout;
+
+  // Start buffering changes as they come in
+  self.listener = new listener(self.localDB);
+
+  // Continuous replication with exponential back-off retry
+
+  function startLiveReplication() {
+    self.replicator = self.localDB.replicate.from(remoteURL, {live: true})
+      .on('change', function () {
+        timeout = options.initialTimeout; // reset
+      })
+      .on('uptodate', function() {
+        if(!self.DBSynced) {
+          self.DBSynced = true;
+          self.readDB = self.localDB;
+          console.log('Initial sync of ' + dbname + ' complete.');
+        }
+      })
+      .on('error', function (err) {
+        self.DBSynced = false;
+        self.readDB = self.remoteDB;
+        if(shutdown || options.noRetry) return;
+        console.warn('Error: Live replication failed. Retrying in ' + timeout / 1000 + 'seconds.');
+        console.warn(err);
+        setTimeout(function () {
+          timeout *= options.backoff;
+          if(timeout > options.maxTimeout) {
+            timeout = options.maxTimeout;
+          }
+          startLiveReplication();
+        }, timeout);
+    });
+  }
+
   this.remoteDB
     .then(function() {
-      self.replicator = self.localDB.replicate.from(remoteURL, {live: true})
-        .on('uptodate', function() {
-          if(!self.DBSynced) {
-            self.DBSynced = true;
-            self.readDB = self.localDB;
-            console.log('Initial sync of ' + dbname + ' complete.');
-          }
-        })
-        .on('complete', function (info) {
-          console.log('Error: Live replication failed!');
-          console.log(info);
-        })
-        .on('error', function (err) {
-          console.log(err);
-        });
-      self.listener = new listener(self.localDB);
-    })
-    .catch(function(err) {
-      throw new Error(err);
+      startLiveReplication();
     });
+
+  function cleanup() {
+    console.log('Shutdown signal received: terminating replications');
+    shutdown = true;
+    self.replicator.cancel();
+  }
+
+  process.on('SIGTERM', cleanup);
+  process.on('SIGINT', cleanup);
+
 };
 
 pouchMirror.prototype.get = function() {
@@ -206,6 +242,7 @@ pouchMirror.prototype.info = function() {
 };
 
 pouchMirror.prototype.cancelSync = function() {
+  shutdown = true;
   this.replicator.cancel();
 };
 
