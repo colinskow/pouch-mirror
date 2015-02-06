@@ -64,15 +64,6 @@ var pouchMirror = module.exports = function(dbname, remoteURL, options) {
       startLiveReplication();
     });
 
-  function cleanup() {
-    console.log('Shutdown signal received: terminating replications');
-    shutdown = true;
-    self.replicator.cancel();
-  }
-
-  process.on('SIGTERM', cleanup);
-  process.on('SIGINT', cleanup);
-
 };
 
 pouchMirror.prototype.get = function() {

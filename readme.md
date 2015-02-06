@@ -49,10 +49,10 @@ db.post({title: "Ziggy Stardust"})
 
 In case there is a replication error, PouchMirror will automatically retry with an [exponential backoff](https://en.wikipedia.org/wiki/Exponential_backoff).
 This will attempt to reconnect less and less frequently until the replication is re-established, at which point it
-resets.
+resets. To cancel replication simply call `db.cancelSync()`.
 
 The options are:
-* initialTimeout (default 1000, 1 sec)
+* initialTimeout (default 1000 ms, 1 sec)
 * backoff - the amount the timeout is multiplied each retry (default 2)
 * maxTimeout - the timeout will never exceed this value (default 600000, 10 min)
 * noRetry - if this is set to true no retry will be attempted (default false)
