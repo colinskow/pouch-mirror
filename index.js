@@ -90,23 +90,24 @@ var pouchMirror = module.exports = function(dbname, remoteURL, options) {
 
 pouchMirror.prototype.createIndex = function (obj) {
   return this.localDB.createIndex(obj);
-}
+};
 
 pouchMirror.prototype.destroy = function (obj) {
+  this.cancelSync();
   return this.localDB.destroy(obj);
-}
+};
 
 pouchMirror.prototype.find = function (obj) {
   return this.localDB.find(obj);
-}
+};
 
 pouchMirror.prototype.getIndexes = function () {
   return this.localDB.getIndexes();
-}
+};
 
 pouchMirror.prototype.deleteIndex = function (obj) {
   return this.localDB.deleteIndex(obj);
-}
+};
 
 pouchMirror.prototype.get = function () {
   var args = processArgs(arguments);
