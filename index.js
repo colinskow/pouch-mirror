@@ -39,6 +39,8 @@ var pouchMirror = module.exports = function(dbname, remoteURL, options) {
           back_off_function: function(delay){
             if (delay === 0){
               delay = options.initialTimeout;
+              
+              return delay;
             }
             delay *= options.backoff;
             if (delay > options.maxTimeout) {
