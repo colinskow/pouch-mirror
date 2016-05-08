@@ -1,19 +1,55 @@
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+module.exports = function Backoff(maxTimeout) {
+  if(maxTimeout == null) {
+    maxTimeout = 600000; // 10 minutes
+  }
+
+  // Backoff function from PouchDB
+  // Starts with a random number between 0 and 2 seconds and doubles it after every failed connect
+  // Will not go higher than options.maxTimeout
+  function randomNumber(min, max) {
+    min = parseInt(min, 10) || 0;
+    max = parseInt(max, 10);
+    if (max !== max || max <= min) {
+      max = (min || 1) << 1; //doubling
+    } else {
+      max = max + 1;
+    }
+    // In order to not exceed maxTimeout, pick a random value between 50% of maxTimeout and maxTimeout
+    if(maxTimeout && max > maxTimeout) {
+      min = maxTimeout >> 1; // divide by two
+      max = maxTimeout;
+    }
+    var ratio = Math.random();
+    var range = max - min;
+
+    return ~~(range * ratio + min); // ~~ coerces to an int, but fast.
+  }
+
+  function defaultBackOff(min) {
+    var max = 0;
+    if (!min) {
+      max = 2000;
+    }
+    return randomNumber(min, max);
+  }
+
+  return defaultBackOff;
+};
+},{}],2:[function(require,module,exports){
 'use strict';
 
 var Listener = require('./listener');
+var Backoff = require('./backoff');
 
-var PouchMirror = module.exports = function (localDB, remote, options) {
+var PouchMirror = module.exports = function (localDB, remote) {
   // self and localDB are the same object, but for clarity I will use localDB only in context of db operations
   var self = this;
+  if(typeof localDB !== 'object' || !localDB.constructor) {
+    throw new TypeError('[PouchMirror] localDB must be an instance of PouchDB');
+  }
   self._localDB = localDB;
   var PouchDB = self._pouch = localDB.constructor;
-
-  if(!options) options = {};
-  options.live = true;
-  if(options.retry && typeof options.back_off_function !== 'function') {
-    options.back_off_function = defaultBackOff;
-  }
-  self._options = options;
 
   // remote is a URL string or a PouchDB instance
   if(typeof remote === 'string') {
@@ -51,13 +87,21 @@ PouchMirror.prototype._initState = function() {
   self._active = false;
 };
 
-PouchMirror.prototype.start = function () {
+PouchMirror.prototype.start = function (options) {
   var self = this;
+  if(!options) options = {};
+  options.live = true;
+  if(options.retry && typeof options.back_off_function !== 'function') {
+    var backoff = new Backoff(options.maxTimeout);
+    options.back_off_function = backoff;
+    // Export this for testing
+    self._defaultBackoff = backoff;
+  }
   if(self._active) throw new Error('[PouchMirror] Error: replication already active');
   self._active = true;
   // Start buffering changes as they come in
   self._listener = new Listener(self._localDB);
-  var replicator = self._localDB.replicate.from(self._remoteDB, self._options)
+  var replicator = self._localDB.replicate.from(self._remoteDB, options)
     .on('paused', function (err) {
       if (err) return;
       if (!self._remoteSynced) {
@@ -266,37 +310,103 @@ function callbackify(promise, cb) {
   });
 }
 
-// Backoff function from PouchDB
-// Starts with a random number between 0 and 2 seconds and doubles it after every failed connect
-// Will not go higher than options.maxTimeout
-function randomNumber(min, max) {
-  var maxTimeout = 600000; // 10 minutes
-  min = parseInt(min, 10) || 0;
-  max = parseInt(max, 10);
-  if (max !== max || max <= min) {
-    max = (min || 1) << 1; //doubling
-  } else {
-    max = max + 1;
-  }
-  // In order to not exceed maxTimeout, pick a random value between 50% of maxTimeout and maxTimeout
-  if(max > maxTimeout) {
-    min = maxTimeout >> 1; // divide by two
-    max = maxTimeout;
-  }
-  var ratio = Math.random();
-  var range = max - min;
-
-  return ~~(range * ratio + min); // ~~ coerces to an int, but fast.
-}
-
-function defaultBackOff(min) {
-  var max = 0;
-  if (!min) {
-    max = 2000;
-  }
-  return randomNumber(min, max);
-}
-
 if(typeof window === 'object') {
   window.PouchMirror = PouchMirror;
 }
+},{"./backoff":1,"./listener":3}],3:[function(require,module,exports){
+'use strict';
+var utils = require('./utils');
+var defer = utils.defer;
+var timeout = utils.timeout;
+
+var timeLimit = 4900;
+
+module.exports = function (db) {
+  var pending = {};
+  var bufferedChanges = {};
+
+  // Keep a buffer of recent changes in case the change comes in before our response
+  function bufferChange(rev) {
+    bufferedChanges[rev] = new Date();
+    // get rid of any expired changes
+    for(var key in bufferedChanges) {
+      if((bufferedChanges[key] + timeLimit) < new Date()) {
+        delete bufferedChanges[key];
+      }
+    }
+  }
+
+  // Init Listener
+  var listener = db.changes({ since: 'now', live: true })
+    .on('change', function (change) {
+      change.changes.forEach(function (item) {
+        if(typeof pending[item.rev] !== 'undefined') {
+          pending[item.rev].resolve({rev: item.rev});
+          delete(pending[item.rev]);
+        } else {
+          bufferChange(item.rev);
+        }
+      });
+    });
+
+  function waitForChange(rev) {
+    var deferred = defer();
+    timeout(deferred.promise, timeLimit)
+      .catch(Promise.TimeoutError, function(err) {
+        delete(pending[rev]);
+        return Promise.reject(err);
+      });
+    if(bufferedChanges[rev]) {
+      deferred.resolve({rev: rev});
+      delete bufferedChanges[rev];
+    } else {
+      pending[rev] = deferred;
+    }
+    return deferred.promise;
+  }
+  
+  return {
+    waitForChange: waitForChange,
+    cancel: function() {
+      return listener.cancel();
+    }
+  };
+
+};
+},{"./utils":4}],4:[function(require,module,exports){
+'use strict';
+
+exports.defer = function() {
+  var resolve, reject;
+  var promise = new Promise(function() {
+    resolve = arguments[0];
+    reject = arguments[1];
+  });
+  return {
+    resolve: resolve,
+    reject: reject,
+    promise: promise
+  };
+};
+
+exports.timeout = function(promise, time) {
+  var done;
+  var delayPromise = new Promise(function (resolve) {
+    var timeout = setTimeout(resolve, time);
+    done = function() {
+      clearTimeout(timeout);
+      resolve(true);
+    };
+  });
+  return Promise.race([
+    promise.then(function() {
+      done();
+    }),
+    delayPromise.then(function (status) {
+      if(!status) {
+        throw new Error('Operation timed out');
+      }
+    })
+  ]);
+};
+},{}]},{},[2]);

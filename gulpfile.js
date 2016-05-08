@@ -10,7 +10,7 @@ var gulp   = require('gulp'),
     rename = require('gulp-rename'),
     streamify = require('gulp-streamify');
 
-var jshintConfig = {node: true, browser: true, mocha: true,
+var jshintConfig = {node: true, browser: true, mocha: true, eqnull: true,
   globals: {Promise: true, chai: true}};
 
 gulp.task('lint', function() {
@@ -30,7 +30,7 @@ gulp.task('clean', ['test-node'], function (cb) {
 });
 
 gulp.task('build-browser', ['clean'], function() {
-  return browserify('./index.js')
+  return browserify('./lib/index.js')
     .bundle()
     .pipe(source('pouch-mirror.js'))
     .pipe(gulp.dest('./dist/'))

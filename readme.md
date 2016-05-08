@@ -1,6 +1,9 @@
 PouchMirror
 ===
-PouchMirror helps you create a local slave mirror of any CouchDB database for lightning-fast reads and secure writes.
+
+**Version 0.2.0 has a NEW API, see usage below.**
+
+PouchMirror helps you create a local slave mirror of any CouchDB database for lightning-fast reads and secure writes. It now works in both NodeJS and the browser!
 
 Accessing a remote CouchDB instance can be slow. PouchDB is an incredible tool that allows you to create local 
 instances of your databases in any Javascript environment and keep them in sync with your server. The problem is that 
@@ -17,6 +20,8 @@ When you write, PouchMirror makes sure that the data is saved on your CouchDB se
 replicated to your local instance before resolving the promise. If a conflict arises, your promise will be rejected and 
 no data saved.
 
+While PouchMirror does feature browser support, it uses your remote db as the primary source of truth and therefore is not appropriate for front-end apps that need to work offline. If you are building an offline app, [`NG-Pouch-Mirror`](https://github.com/colinskow/ng-pouch-mirror) is a much better option.
+
 For issues and feature requests visit the [issue tracker](https://github.com/colinskow/pouch-mirror/issues).
 
 Build status
@@ -29,56 +34,66 @@ PouchMirror is an exact mirror of the PouchDB API, and can serve as a drop-in re
 code. Both promises and callbacks are supported.
 
 In Node.js, simply require "pouch-mirror" and initiate it:
-`new PouchMirror(dbName, remoteURL, [options])`
+`new PouchMirror(localDB, remote)`
+
+`localDB` MUST be an instance of `PouchDB`. `remote` may be a URL string OR an instance of `PouchDB`.
+
+In the browser, simply include a script tag below PouchDB:
+`<script src="dist/pouch-mirror.js"></script>` and use the same syntax.
 
 Example:
 ```Javascript
+var PouchDB = require('pouchdb');
+var memdown = require('memdown');
 var PouchMirror = require('pouch-mirror');
-var db = new PouchMirror('testDB', 'http://localhost:5984/pouchtest');
-db.post({title: "Ziggy Stardust"})
+
+var localDB = new PouchDB('testDB', {db: memdown});
+var mirror = new PouchMirror('testDB', 'http://localhost:5984/pouchtest');
+
+var replicator = mirror.start({retry: true});
+// PouchDB replication events will pass through here.
+// When the initial replication is complete you will get a
+// special one-time 'up-to-date' event.
+replicator.on('up-to-date', function(info) {
+  console.log('Congratulations, initial replication of ' +
+    info.db + 'complete!');
+});
+
+mirror.post({title: "Ziggy Stardust"})
   .then(function(result) {
-    return db.get(result.id);
+    return mirror.get(result.id);
   })
   .then(function(doc){
     console.log(doc);
+    // You can pause replication any time you want like this:
+    mirror.pause();
+    // And restart it again with mirror.start()
   })
   .catch(function(err) {
     console.log(err);
   });
 ```
 
-In case there is a replication error, PouchMirror will automatically retry with an [exponential backoff](https://en.wikipedia.org/wiki/Exponential_backoff).
-This will attempt to reconnect less and less frequently until the replication is re-established, at which point it
-resets. To cancel replication simply call `db.cancelSync()`.
-
-The options are:
-* initialTimeout (default 1000 ms, 1 sec)
-* backoff - the amount the timeout is multiplied each retry (default 2)
-* maxTimeout - the timeout will never exceed this value (default 600000, 10 min)
-* noRetry - if this is set to true no retry will be attempted (default false)
-
 API
 ---
 PouchMirror uses that exact same API as [PouchDB](http://pouchdb.com/api.html), but does some magic in the background 
-to ensure your local mirror stays in perfect sync.
+to ensure your local mirror stays in perfect sync. In addition, you have the following commands available:
+
+* `pouchMirror.start([options])` - starts replication and returns the PouchDB replicator object.
+* `pouchMirror.pause()` - pauses replication. `replicator.cancel()` also does the same thing.
+
+All `start` options will be passed directly to `PouchDB.replicate`:
+* `options.retry` - set this to `true` if you want PouchMirror to automatically attempt to reconnect in the case of replication problems. This uses PouchDB's default backoff function with a maximum timeout added.
+* `options.maxTimeout` - the retry timeout for the default backoff will never exceed this value (default 600000, 10 min). Set to 0 to allow infinite backoff.
+* `options.back_off_function` - supply your own backoff function. `maxTimeout` has no effect with this option.
 
 Road Map
 ---
 
-**1) Disk database**
+**Local first mode**
 
-Currently PouchMirror uses PouchDB's in-memory MemDown adapter. This works well for frequently-accessed data that will 
-fit in your server's memory. I would like to add the option to backup your data to disk, or use an on-disk database 
-exclusively.
+Continuous replication can be request heavy, and in order to save hosting money I have a [request](https://github.com/colinskow/pouch-mirror/issues/5) to create a mode which puts the local database first and debounces changes before sending them to the remote server.
 
-**2) Browser support**
+**More extensive testing**
 
-PouchMirror currently doesn't work in the browser. However, I believe this is simply a matter of using Browserify and 
-making sure PouchDB loads the correct adapters. If someone wants to do this, I would be very happy to receive a pull 
-request.
-
-**3) More extensive testing**
-
-I have run the tests against a local CouchDB instance, and against Cloudant. However, this definitely needs real world 
-experience on a multi-tiered setup to make sure it is production safe.
-
+I have run the tests against a local CouchDB instance, and have been using it in small-scale production on Cloudant. However, this definitely needs more experience on large setups to make sure it stands up to scaling demands.

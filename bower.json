@@ -1,0 +1,22 @@
+{
+  "name": "pouch-mirror",
+  "description": "Create a local slave mirror of any CouchDB database for lightning-fast reads and secure writes",
+  "version": "0.2.0",
+  "author": "Colin Skow",
+  "license": "MIT",
+  "homepage": "http://github.com/colinskow/pouch-mirror",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/colinskow/pouch-mirror.git"
+  },
+  "main": ["dist/pouch-mirror.js"],
+  "keywords": [
+    "PouchDB",
+    "CouchDB",
+    "sync",
+    "replication",
+    "mirror"
+  ],
+  "dependencies": {},
+  "devDependencies": {}
+}
