@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>PouchMirror Mocha Tests</title>
+  <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
+  <style>
+    #fixture {
+      position: absolute;
+      top: -9999;
+      left: -9999;
+    };
+  </style>
+  <script src="../node_modules/chai/chai.js"></script>
+  <script src="../node_modules/mocha/mocha.js"></script>
+  <script> mocha.setup('bdd');</script>
+  <script src="../node_modules/pouchdb/dist/pouchdb.js"></script>
+  <script src="../node_modules/pouchdb/dist/pouchdb.memory.js"></script>
+  <script src="../dist/pouch-mirror.js"></script>
+  <script src="pouch-mirror.spec.js"></script>
+  <script>
+    window.onload = function() {
+      mocha.run()
+    };
+  </script>
+</head>
+<body>
+<div id="mocha"></div>
+</body>
+</html>

@@ -1,5 +1,7 @@
-var BPromise = require('bluebird');
-var defer = require('./defer');
+'use strict';
+var utils = require('./utils');
+var defer = utils.defer;
+var timeout = utils.timeout;
 
 var timeLimit = 4900;
 
@@ -8,8 +10,7 @@ module.exports = function (db) {
   var bufferedChanges = {};
 
   // Keep a buffer of recent changes in case the change comes in before our response
-  var bufferChange = function(rev) {
-    // console.log('Buffering change ' + rev);
+  function bufferChange(rev) {
     bufferedChanges[rev] = new Date();
     // get rid of any expired changes
     for(var key in bufferedChanges) {
@@ -17,10 +18,10 @@ module.exports = function (db) {
         delete bufferedChanges[key];
       }
     }
-  };
+  }
 
   // Init Listener
-  db.changes({ since: 'now', live: true})
+  var listener = db.changes({ since: 'now', live: true })
     .on('change', function (change) {
       change.changes.forEach(function (item) {
         if(typeof pending[item.rev] !== 'undefined') {
@@ -32,14 +33,12 @@ module.exports = function (db) {
       });
     });
 
-  var waitForChange = function(rev) {
+  function waitForChange(rev) {
     var deferred = defer();
-    deferred.promise
-      .timeout(timeLimit)
-      .catch(BPromise.TimeoutError, function(err) {
+    timeout(deferred.promise, timeLimit)
+      .catch(Promise.TimeoutError, function(err) {
         delete(pending[rev]);
-        console.log(err);
-        return BPromise.reject(err);
+        return Promise.reject(err);
       });
     if(bufferedChanges[rev]) {
       deferred.resolve({rev: rev});
@@ -48,10 +47,13 @@ module.exports = function (db) {
       pending[rev] = deferred;
     }
     return deferred.promise;
-  };
+  }
   
   return {
-    waitForChange: waitForChange
+    waitForChange: waitForChange,
+    cancel: function() {
+      return listener.cancel();
+    }
   };
 
 };

@@ -19,18 +19,25 @@
   ],
   "author": "Colin Skow",
   "license": "MIT",
-  "dependencies": {
-    "memdown": "^1.1.2",
-    "pouchdb": "^5.3.2"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "bluebird": "^3.3.5",
+    "browserify": "^13.0.1",
     "chai": "^3.5.0",
     "gulp": "^3.8.10",
     "gulp-jshint": "^2.0.0",
     "gulp-mocha": "^2.0.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-streamify": "^1.0.2",
+    "gulp-uglify": "^1.5.3",
     "jshint": "^2.9.2",
     "jshint-stylish": "^2.2.0",
-    "mocha": "^2.4.5"
+    "karma": "^0.13.22",
+    "karma-chrome-launcher": "^1.0.1",
+    "karma-mocha": "^1.0.1",
+    "memdown": "^1.1.2",
+    "mocha": "^2.4.5",
+    "pouchdb": "^5.3.2",
+    "rimraf": "^2.5.2",
+    "vinyl-source-stream": "^1.1.0"
   }
 }

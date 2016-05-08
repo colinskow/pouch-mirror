@@ -1,23 +1,43 @@
-var PouchMirror = require('../index');
-var BPromise = require('bluebird');
-var expect = require('chai').expect;
+'use strict';
+
+// Only for Node.js tests
+if(typeof window !== 'object') {
+  var expect = require('chai').expect;
+  var PouchDB = require('pouchdb');
+  var memdown = require('memdown');
+  var PouchMirror = require('../index');
+
+  var dbOptions = {db: memdown};
+} else {
+  var expect = chai.expect;
+  var dbOptions = {adapter: 'memory'};
+}
 
 var remoteURL = 'http://localhost:5984/pouchtest';
 var dbname = 'pouchtest';
 
-var db = new PouchMirror(dbname, remoteURL);
-
-// Used to make sure the previous test has completed before starting the next one
-var previous = BPromise.resolve();
-
 describe('PouchMirror', function () {
 
-  after(function() {
-    return previous
-      .finally(function() {
-        db.cancelSync();
-        return BPromise.all([db.remoteDB.destroy(), db.localDB.destroy()]);
+  var localDB, remoteDB, db, replicator, emitterPromise, previous;
+
+  before(function() {
+    // Used to make sure the previous test has completed before starting the next one
+    previous = Promise.resolve();
+    localDB = new PouchDB(dbname, dbOptions);
+    remoteDB = new PouchDB(remoteURL);
+    db = new PouchMirror(localDB, remoteDB);
+    replicator = db.start();
+
+    // To test the up-to-date event
+    emitterPromise = new Promise(function(resolve) {
+      replicator.on('up-to-date', function() {
+        resolve();
       });
+    });
+  });
+
+  after(function() {
+    return Promise.all([db._remoteDB.destroy(), db._localDB.destroy()]);
   });
 
   describe('info()', function () {
@@ -30,6 +50,9 @@ describe('PouchMirror', function () {
         .then(function (results) {
           expect(results.remote.db_name).to.equal(dbname);
           expect(results.local.db_name).to.equal(dbname);
+        })
+        .catch(function(err) {
+          return Promise.reject(err);
         });
     });
 
@@ -48,16 +71,19 @@ describe('PouchMirror', function () {
         .then(function (response) {
           newID = response.id;
           newRev = response.rev;
-          return db.localDB.get(newID);
+          return localDB.get(newID);
         })
         .then(function (local) {
           newDoc = local;
           expect(local.title).to.equal('testdoc1');
-          return db.remoteDB.get(newID);
+          return db._remoteDB.get(newID);
         })
         .then(function (remote) {
           expect(newDoc._rev).to.equal(remote._rev);
           expect(remote.title).to.equal('testdoc1');
+        })
+        .catch(function(err) {
+          return Promise.reject(err);
         });
     });
 
@@ -67,7 +93,7 @@ describe('PouchMirror', function () {
           return db.remove(newID, newRev);
         })
         .then(function () {
-          return db.localDB.get(newID);
+          return db._localDB.get(newID);
         })
         .catch(function (err) {
           expect(err.reason || err.message).to.equal('deleted');
@@ -98,7 +124,10 @@ describe('PouchMirror', function () {
     var sampledoc = {
       _id: 'sampledoc'
     };
-    var attachment = new Buffer("It's a God awful small affair");
+
+    var attachment =
+      'TGVnZW5kYXJ5IGhlYXJ0cywgdGVhciB1cyBhbGwgYXBhcnQKTWFrZS' +
+      'BvdXIgZW1vdGlvbnMgYmxlZWQsIGNyeWluZyBvdXQgaW4gbmVlZA==';
     
     it('should save, get, and remove an attachment', function () {
       var rev;
@@ -114,8 +143,8 @@ describe('PouchMirror', function () {
           expect(result.ok).to.equal(true);
           return db.getAttachment('sampledoc', 'text');
         })
-        .then(function (buffer) {
-          expect(buffer.toString()).to.equal("It's a God awful small affair");
+        .then(function (result) {
+          expect(result.size || result.length).to.equal(79);
           return db.removeAttachment('sampledoc', 'text', rev);
         })
         .then(function (response) {
@@ -125,12 +154,16 @@ describe('PouchMirror', function () {
     
   });
 
-  describe('callbacks', function() {
+  describe('PouchMirror API', function() {
 
-    it('should work with callbacks also', function() {
+    it('should pass through functions from the localDB object', function() {
+      expect(db.type()).to.equal('leveldb');
+    });
+
+    it('should work with callbacks', function() {
       return previous
         .then(function() {
-          return new BPromise(function(resolve) {
+          return new Promise(function(resolve) {
             db.put({_id: 'callback_test'}, function(err, result) {
               expect(result.id).to.equal('callback_test');
               db.get('callback_test', function(err, doc) {
@@ -140,6 +173,27 @@ describe('PouchMirror', function () {
             });
           });
         });
+    });
+
+    it('should have emitted an up-to-date event', function() {
+      return previous
+        .then(function() {
+          return emitterPromise;
+        })
+        .then(function() {
+          expect(db._remoteSynced).to.equal(true);
+          expect(db._readDB).to.equal(localDB);
+        });
+    });
+
+    it('should pause and restart replication without error', function() {
+      expect(db._active).to.equal(true);
+      db.pause();
+      expect(db._active).to.equal(false);
+      expect(db._remoteSynced).to.equal(false);
+      expect(db._readDB).to.equal(remoteDB);
+      db.start();
+      expect(db._active).to.equal(true);
     });
 
   });
