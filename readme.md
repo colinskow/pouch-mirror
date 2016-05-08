@@ -87,6 +87,8 @@ All `start` options will be passed directly to `PouchDB.replicate`:
 * `options.maxTimeout` - the retry timeout for the default backoff will never exceed this value (default 600000, 10 min). Set to 0 to allow infinite backoff.
 * `options.back_off_function` - supply your own backoff function. `maxTimeout` has no effect with this option.
 
+All write requests will ALWAYS go to the remote db first, and the promise will only resolve after changes are confirmed to have replicated to local. When replication is paused, all read requests will also go to remote. After the initial replication has finished all read requests will come from the local db as long as replication stays active.
+
 Road Map
 ---
 
