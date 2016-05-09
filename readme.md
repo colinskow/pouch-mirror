@@ -48,7 +48,7 @@ var memdown = require('memdown');
 var PouchMirror = require('pouch-mirror');
 
 var localDB = new PouchDB('testDB', {db: memdown});
-var mirror = new PouchMirror('testDB', 'http://localhost:5984/pouchtest');
+var mirror = new PouchMirror(localDB, 'http://localhost:5984/pouchtest');
 
 var replicator = mirror.start({retry: true});
 // PouchDB replication events will pass through here.
