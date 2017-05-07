@@ -3,7 +3,7 @@ PouchMirror
 
 **Version 0.2.0 has a NEW API, see usage below.**
 
-PouchMirror helps you create a local slave mirror of any CouchDB database for lightning-fast reads and secure writes. It now works in both NodeJS and the browser!
+PouchMirror helps you create a local mirror of any CouchDB database for lightning-fast reads and secure writes. It now works in both NodeJS and the browser!
 
 Accessing a remote CouchDB instance can be slow. PouchDB is an incredible tool that allows you to create local 
 instances of your databases in any Javascript environment and keep them in sync with your server. The problem is that 
