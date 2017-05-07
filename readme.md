@@ -3,22 +3,13 @@ PouchMirror
 
 **Version 0.2.0 has a NEW API, see usage below.**
 
-PouchMirror helps you create a local mirror of any CouchDB database for lightning-fast reads and secure writes. It now works in both NodeJS and the browser!
+PouchMirror helps you create a local mirror of any CouchDB database for lightning-fast reads and secure writes. It differs from standard CouchDB replication in that the remote DB is the single source of truth. This prevents most write conflicts.
 
-Accessing a remote CouchDB instance can be slow. PouchDB is an incredible tool that allows you to create local 
-instances of your databases in any Javascript environment and keep them in sync with your server. The problem is that 
-writing to a replica of your main database comes with no guarantees and can lead to unexpected results. For example, 
-if multiple nodes are writing to the same documents at the same time, automatic conflict resolution can cause changes 
-you thought you saved to pop out of existence.
+Accessing a remote CouchDB instance can be slow. PouchDB is an incredible tool that allows you to create local instances of your databases in any Javascript environment and keep them in sync with your server. The problem is that writing to a replica of your main database comes with no guarantees and can lead to unexpected results. For example, if multiple nodes are writing to the same documents at the same time, automatic conflict resolution can cause changes you thought you saved to pop out of existence.
 
-When PouchMirror first starts up it will initiate replication to create a local in-memory mirror of your remote 
-database. Before this initial replication is finished, all read requests are automatically routed to the server to 
-ensure accurate reads. Once the initial replication is complete, you will enjoy lightning-fast reads from your local 
-database on all requests.
+When PouchMirror first starts up it will initiate replication to create a local in-memory mirror of your remote database. Before this initial replication is finished, all read requests are automatically routed to the server to ensure accurate reads. Once the initial replication is complete, you will enjoy lightning-fast reads from your local database on all requests.
 
-When you write, PouchMirror makes sure that the data is saved on your CouchDB server with no conflict AND fully 
-replicated to your local instance before resolving the promise. If a conflict arises, your promise will be rejected and 
-no data saved.
+When you write, PouchMirror makes sure that the data is saved on your CouchDB server with no conflict AND fully replicated to your local instance before resolving the promise. If a conflict arises, your promise will berejected and no data saved.
 
 While PouchMirror does feature browser support, it uses your remote db as the primary source of truth and therefore is not appropriate for front-end apps that need to work offline. If you are building an offline app, [`NG-Pouch-Mirror`](https://github.com/colinskow/ng-pouch-mirror) is a much better option.
 
@@ -30,8 +21,7 @@ Build status
 
 Usage
 ---
-PouchMirror is an exact mirror of the PouchDB API, and can serve as a drop-in replacement for your existing PouchDB 
-code. Both promises and callbacks are supported.
+PouchMirror is an exact mirror of the PouchDB API, and can serve as a drop-in replacement for your existing PouchDB code. Both promises and callbacks are supported.
 
 In Node.js, simply require "pouch-mirror" and initiate it:
 `new PouchMirror(localDB, remote)`
@@ -76,8 +66,7 @@ mirror.post({title: "Ziggy Stardust"})
 
 API
 ---
-PouchMirror uses that exact same API as [PouchDB](http://pouchdb.com/api.html), but does some magic in the background 
-to ensure your local mirror stays in perfect sync. In addition, you have the following commands available:
+PouchMirror uses that exact same API as [PouchDB](http://pouchdb.com/api.html), but does some magic in the background to ensure your local mirror stays in perfect sync. In addition, you have the following commands available:
 
 * `pouchMirror.start([options])` - starts replication and returns the PouchDB replicator object.
 * `pouchMirror.pause()` - pauses replication. `replicator.cancel()` also does the same thing.
